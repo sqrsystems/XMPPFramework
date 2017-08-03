@@ -1033,29 +1033,39 @@ enum XMPPRoomState
 		
 		[multicastDelegate xmppRoomDidCreate:self];
 	}
-	
+
 	if (isMyPresence)
 	{
+		BOOL isDestroy = [x elementForName:@"destroy"] != nil;
+
 		if (isAvailable)
 		{
 			myRoomJID = from;
 			myNickname = [from resource];
-            
+
 			if (state & kXMPPRoomStateJoining)
 			{
 				state &= ~kXMPPRoomStateJoining;
 				state |=  kXMPPRoomStateJoined;
-				
+
 				if ([xmppRoomStorage respondsToSelector:@selector(handleDidJoinRoom:withNickname:)])
 					[xmppRoomStorage handleDidJoinRoom:self withNickname:myNickname];
 				[multicastDelegate xmppRoomDidJoin:self];
 			}
 		}
+		else if (isDestroy)
+		{
+			state = kXMPPRoomStateNone;
+			[responseTracker removeAllIDs];
+
+			[xmppRoomStorage handleDidLeaveRoom:self];
+			[multicastDelegate xmppRoomDidDestroy:self];
+		}
 		else if (isUnavailable && !isNicknameChange)
 		{
 			state = kXMPPRoomStateNone;
 			[responseTracker removeAllIDs];
-			
+
 			[xmppRoomStorage handleDidLeaveRoom:self];
 			[multicastDelegate xmppRoomDidLeave:self];
 		}
